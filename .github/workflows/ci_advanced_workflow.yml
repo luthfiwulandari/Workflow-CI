@@ -1,40 +1,87 @@
-name: Upload MLflow Model to Google Drive
+name: MLflow + Docker CI/CD
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  upload-model:
+  build-and-upload:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    # 1. Checkout repository
+    - name: Checkout repository
       uses: actions/checkout@v3
 
-    # (Optional) Setup conda environment, edit/remove as needed
-    - name: Setup conda environment
-      uses: conda-incubator/setup-miniconda@v2
+    # 2. Setup Python (versi yang kamu sebut: 3.12.7)
+    - name: Set up Python 3.12.7
+      uses: actions/setup-python@v5
       with:
-        environment-file: environment.yml
-        activate-environment: heart-disease-env
+        python-version: "3.12.7"
 
-    # Install rclone
+    # 3. Check environment (contoh: print Python & pip version)
+    - name: Check Env
+      run: |
+        python --version
+        pip --version
+
+    # 4. Install dependencies (dari requirements.txt)
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    # 5. Run MLflow project (ganti dengan command project kamu)
+    - name: Run MLflow project
+      run: |
+        python run_mlflow.py
+
+    # 6. Get latest MLflow run_id (contoh: ambil run id terakhir dari mlruns/0)
+    - name: Get latest MLflow run_id
+      id: get_run_id
+      run: |
+        RUN_ID=$(ls -td mlruns/0/* | head -1 | xargs -n1 basename)
+        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+    # 7. Install Python dependencies tambahan (kalau ada, bisa digabung step 4)
+    - name: Install Python dependencies
+      run: pip install rclone
+
+    # 8. Install rclone CLI
     - name: Install rclone
       run: |
         sudo apt-get update
         sudo apt-get install -y rclone
 
-    # Setup rclone config from secret
+    # 9. Setup rclone config dari secrets
     - name: Setup rclone config
       run: |
         mkdir -p ~/.config/rclone
         echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
 
-    # Upload ML model to Google Drive
-    - name: Upload model folder to Google Drive
+    # 10. Upload MLflow model folder ke Google Drive
+    - name: Upload to Google Drive
       run: |
-        # Ganti path di bawah sesuai dengan folder/file yang ingin di-upload
-        rclone copy ./mlruns/0/${{ github.run_id }}/model gdrive:mlflow-models/heart-disease/${{ github.run_id }} --drive-root-folder-id ${{ secrets.GDRIVE_FOLDER_ID }}
+        rclone copy mlruns/0/${{ steps.get_run_id.outputs.run_id }}/model gdrive:mlflow-models/heart-disease/${{ steps.get_run_id.outputs.run_id }} --drive-root-folder-id ${{ secrets.GDRIVE_FOLDER_ID }}
+
+    # 11. Build Docker image
+    - name: Build Docker Model
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/heart-disease:${{ steps.get_run_id.outputs.run_id }} .
+
+    # 12. Login to Docker Hub
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # 13. Tag Docker image
+    - name: Tag Docker Image
+      run: |
+        docker tag ${{ secrets.DOCKER_USERNAME }}/heart-disease:${{ steps.get_run_id.outputs.run_id }} ${{ secrets.DOCKER_USERNAME }}/heart-disease:latest
+
+    # 14. Push Docker image
+    - name: Push Docker Image
+      run: |
+        docker push ${{ secrets.DOCKER_USERNAME }}/heart-disease:${{ steps.get_run_id.outputs.run_id }}
+        docker push ${{ secrets.DOCKER_USERNAME }}/heart-disease:latest
