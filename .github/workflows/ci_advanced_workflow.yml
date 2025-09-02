@@ -118,19 +118,17 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }} # Set as GitHub Secret
         password: ${{ secrets.DOCKERHUB_TOKEN }}   # Set as GitHub Secret
 
-    - name: Tag Docker image # Step from criteria (depends on build step output and Docker Hub username)
+    - name: Tag Docker Image
       run: |
-        echo "Tagging Docker image..."
-        # Example (adjust image name/tag as needed):
-        # docker tag heart-disease-model:latest <DOCKERHUB_USERNAME>/heart-disease-model:latest
-        echo "Placeholder for Docker tag command."
+        # Tag image yang dibangun oleh mlflow build-docker
+        # Nama image default dari mlflow build-docker adalah nama project/nama run (misalnya: heart-disease-prediction/randomforest_autolog_project)
+        # Kita tag ulang dengan format Docker Hub: <YOUR_DOCKERHUB_USERNAME>/<YOUR_IMAGE_NAME>
+        # Sesuaikan nama image awal (heart-disease-prediction/randomforest_autolog_project) jika berbeda di log Anda
+        docker tag heart-disease-prediction/randomforest_autolog_project lthfiwlndri/heart-disease-model:latest
 
-    - name: Push Docker image # Step from criteria
+    - name: Push Docker Image
       run: |
-        echo "Pushing Docker image to Docker Hub..."
-        # Example (adjust image name/tag as needed):
-        # docker push <DOCKERHUB_USERNAME>/heart-disease-model:latest
-        echo "Placeholder for Docker push command."
+        docker push lthfiwlndri/heart-disease-model:latest
 
     - name: Post Log in to Docker Hub # Step from criteria (Handled by uses action)
       run: echo "Post Login handled by action" # Placeholder
