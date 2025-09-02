@@ -28,9 +28,8 @@ jobs:
         miniconda-version: "latest"
         python-version: 3.12 # Pastikan sesuai dengan versi di conda.yaml
         auto-activate-base: false
-        auto-conda-run: false # Kita akan menggunakan shell: bash -l {0} dan conda activate
         environment-file: Workflow-CI/MLProject/conda.yaml # Path ke conda.yaml Anda
-        use-shell-path: true # Memastikan binari conda ada di PATH
+       
 
     # Menjalankan MLflow Project untuk melatih model dan mencatatnya
     - name: Run mlflow project # Langkah Run mlflow project
