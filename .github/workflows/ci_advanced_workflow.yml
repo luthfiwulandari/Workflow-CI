@@ -70,12 +70,10 @@ jobs:
       run: |
         # Mengaktifkan environment dan menjalankan mlflow build-docker
         conda activate heart-disease-env
-        # --model-uri harus menunjuk ke model yang berhasil dicatat oleh langkah mlflow run sebelumnya
-        # "runs:/<nama_run>/<artifact_path_model>"
-        # Nama run default dari autolog adalah RandomForest_Autolog_Project (sesuaikan jika beda)
-        # Artifact path default untuk model autolog adalah "model"
-        # Ganti lthfiwlndri/heart-disease-model dengan nama image yang Anda inginkan di Docker Hub
-        mlflow build-docker Workflow-CI/MLProject --model-uri "runs:/RandomForest_Autolog_Project/model" --image "lthfiwlndri/heart-disease-model" # Sesuaikan nama image jika perlu
+        # Pastikan MLflow dengan dukungan docker terinstal
+        pip install mlflow[docker] # <--- Tambahkan baris ini
+        # --model-uri harus menunjuk ke model yang berhasil dicatat
+        mlflow build-docker Workflow-CI/MLProject --model-uri "runs:/RandomForest_Autolog_Project/model" --image "lthfiwlndri/heart-disease-model" # Sesuaikan
 
     - name: Log in to Docker Hub # Langkah Log in to Docker Hub
       uses: docker/login-action@v3 # Menggunakan action untuk login Docker
