@@ -97,15 +97,13 @@ jobs:
 
 
     - name: Build Docker Model # Step from criteria (requires Docker setup on runner, might need specific action)
-      # This requires Docker to be available and potentially mlflow build-docker support
-      # MLflow build-docker command syntax might vary.
-      # You typically build docker from the logged model artifact path.
-      # This step depends on the 'Get latest MLflow run_id' step succeeding and setting MLFLOW_RUN_ID.
       run: |
         echo "Building Docker image from model artifact..."
         export PATH="$HOME/miniconda/bin:$PATH"
-        source ~/.bashrc
-        conda activate heart-disease-env
+        # Source Conda's own activation script
+        source $HOME/miniconda/etc/profile.d/conda.sh # Add this line
+        conda activate heart-disease-env # Activate the environment
+
         # Navigate to the repository root if needed, or keep in MLProject dir
         # cd /home/runner/work/Workflow-CI/Workflow-CI/ # Example to go to repo root
 
