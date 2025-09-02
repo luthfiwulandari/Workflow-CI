@@ -29,6 +29,7 @@ jobs:
         python-version: 3.12 # Pastikan sesuai dengan versi di conda.yaml
         auto-activate-base: false
         environment-file: MLProject/conda.yaml # <--- Pastikan path ini benar
+        activate-environment: heart-disease-env # Memberi tahu action untuk membuat/mengaktifkan environment ini
        
 
     # Menjalankan MLflow Project untuk melatih model dan mencatatnya
