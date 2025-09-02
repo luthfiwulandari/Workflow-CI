@@ -23,12 +23,12 @@ jobs:
         python-version: '3.12' # Sesuaikan dengan versi di conda.yaml
 
     - name: Install dependencies # Langkah Install dependencies (Menggunakan Miniconda env)
-      uses: conda-incubator/setup-miniconda@v2 # Menggunakan action untuk menyiapkan Miniconda dan environment
+      uses: conda-incubator/setup-miniconda@v2
       with:
         miniconda-version: "latest"
         python-version: 3.12 # Pastikan sesuai dengan versi di conda.yaml
         auto-activate-base: false
-        environment-file: Workflow-CI/MLProject/conda.yaml # Path ke conda.yaml Anda
+        environment-file: Workflow-CI/MLProject/conda.yaml # <--- Pastikan path ini benar
        
 
     # Menjalankan MLflow Project untuk melatih model dan mencatatnya
