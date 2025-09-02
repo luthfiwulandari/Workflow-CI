@@ -3,138 +3,85 @@ name: CI Workflow Advanced (MLflow Project + Docker)
 on:
   push:
     branches:
-      - main # Ganti jika branch utama Anda berbeda
-  # Anda bisa tambahkan trigger lain, misalnya pull_request:
+      - main
 
 jobs:
-  build-and-deploy: # Nama job, bisa disesuaikan
-    runs-on: ubuntu-latest # Menggunakan runner
+  build-and-deploy:
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Set up job # Langkah Set up job (ini adalah langkah otomatis oleh runner)
-      run: echo "Starting job setup." # Placeholder, sebenarnya otomatis
+    - name: Set up job
+      run: echo "Starting job setup."
 
-    - name: Checkout code # Langkah Checkout code
-      uses: actions/checkout@v3 # Menggunakan action untuk checkout kode
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Set up Python 3.12.7 # Langkah Set up Python
-      uses: actions/setup-python@v4 # Menggunakan action untuk menyiapkan Python
+    - name: Set up Python 3.12.7
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.12' # Sesuaikan dengan versi di conda.yaml
+        python-version: '3.12'
 
-    - name: Install dependencies # Langkah Install dependencies (Menggunakan Miniconda env)
+    - name: Install dependencies (Miniconda env)
       uses: conda-incubator/setup-miniconda@v2
       with:
         miniconda-version: "latest"
-        python-version: 3.12 # Pastikan sesuai dengan versi di conda.yaml
+        python-version: 3.12
         auto-activate-base: false
-        environment-file: MLProject/conda.yaml # <--- Pastikan path ini benar
-        activate-environment: heart-disease-env # Memberi tahu action untuk membuat/mengaktifkan environment ini
-       
+        environment-file: MLProject/conda.yaml
+        activate-environment: heart-disease-env
 
-    - name: Run mlflow project # Langkah Run mlflow project
-      shell: bash -l {0} # Menggunakan login shell bash
+    - name: Run mlflow project
+      shell: bash -l {0}
       run: |
-        # Mengaktifkan environment dan menjalankan mlflow run
         conda activate heart-disease-env
-        cd MLProject # Path yang benar
-        mlflow run . -e main -P data_path=heart_clean.csv # <--- --no-conda dihapus
-        
-    # Langkah ini opsional dan tergantung apakah Anda perlu mengambil run ID secara eksplisit
-    - name: Get latest MLflow run_id # Langkah Get latest MLflow run_id (Placeholder)
-      shell: bash -l {0} # Menggunakan login shell bash
-      run: |
-        # Kode untuk mendapatkan run ID terbaru, sesuaikan dengan kebutuhan jika diperlukan
-        echo "Placeholder for getting run ID. Implement code here if needed."
+        cd MLProject
+        mlflow run . -e main -P data_path=heart_clean.csv
 
-    # Install dependensi Python tambahan jika ada yang tidak di conda.yaml
-    - name: Install Python dependencies (additional) # Langkah Install Python dependencies
-      shell: bash -l {0} # Menggunakan login shell bash
+    - name: Get latest MLflow run_id
+      shell: bash -l {0}
+      id: get_run_id
       run: |
-        # Contoh: conda activate heart-disease-env && pip install nama_library_tambahan
+        conda activate heart-disease-env
+        cd MLProject
+        # Mendapatkan run ID terakhir
+        RUN_ID=$(ls ../mlruns/0 | grep -v meta.yaml | grep -v params.yaml | tail -n 1)
+        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+    - name: Install Python dependencies (additional)
+      shell: bash -l {0}
+      run: |
         echo "Installing additional Python dependencies step (modify if needed)."
 
-    - name: Upload to Google Drive # Langkah Upload to Google Drive
-      # Langkah ini sangat bergantung pada metode upload yang Anda gunakan.
-      # Ini bisa berupa:
-      # - Menggunakan action GitHub untuk Google Drive upload.
-      # - Menjalankan skrip Python yang mengunggah artefak (misalnya dari mlruns/ folder) ke Google Drive.
-      # - Jika Anda menggunakan DagsHub, artefak sudah otomatis terupload oleh MLflow.
-      run: |
-        echo "Placeholder for Upload to Google Drive step. Implement your upload logic here."
-        # Contoh: Jika menggunakan DagsHub, artefak sudah diunggah oleh MLflow run.
-        # Jika mengunggah file lokal, gunakan perintah atau action yang sesuai.
-        
-    # Langkah Debugging: Memeriksa instalasi MLflow sebelum membangun Docker
     - name: Debug MLflow Installation
-      shell: bash -l {0} # Menggunakan login shell bash
+      shell: bash -l {0}
       run: |
-        echo "Debugging MLflow installation..."
-        # Aktifkan environment
         conda activate heart-disease-env
-        echo "Conda environment 'heart-disease-env' activated."
-
-        # Periksa versi MLflow yang terinstal
-        echo "Installed MLflow version:"
-        pip show mlflow || echo "MLflow not found via pip show."
-        conda list mlflow || echo "MLflow not found via conda list."
-
-        # Periksa apakah perintah 'mlflow' ada di PATH
-        echo "Checking if 'mlflow' command is in PATH:"
-        which mlflow || echo "'mlflow' command not found in PATH."
-
-        # Periksa help MLflow untuk melihat sub-command yang tersedia
-        echo "Checking mlflow --help output for 'build-docker':"
+        echo "MLflow version:"
+        mlflow --version
+        which mlflow
         mlflow --help
-        # Coba jalankan help untuk build-docker secara spesifik (ini mungkin gagal jika command tidak ada)
-        echo "Checking mlflow build-docker --help output:"
-        mlflow build-docker --help || echo "'mlflow build-docker' help command failed."
 
-        echo "Debug steps complete. Check the output above for clues."
+    - name: Build Docker Model
+      shell: bash -l {0}
+      run: |
+        conda activate heart-disease-env
+        # Gunakan RUN_ID dari langkah sebelumnya
+        mlflow build-docker MLProject --model-uri "runs:/${{ steps.get_run_id.outputs.run_id }}/model" --image "lthfiwlndri/heart-disease-model"
 
-    # Langkah Build Docker Model (yang saat ini error)
-    - name: Build Docker Model # Langkah Build Docker Model
-      shell: bash -l {0} # Menggunakan login shell bash
-      run: |
-        # Menggunakan conda run -n untuk menjalankan perintah di environment
-        # Ganti lthfiwlndri/heart-disease-model dengan nama image yang Anda inginkan di Docker Hub
-        conda run -n heart-disease-env mlflow build-docker Workflow-CI/MLProject --model-uri "runs:/RandomForest_Autolog_Project/model" --image "lthfiwlndri/heart-disease-model" # Sesuaikan
-    - name: Build Docker Model # Langkah Build Docker Model
-      shell: bash -l {0} # Menggunakan login shell bash
-      run: |
-        # Menggunakan conda run -n untuk menjalankan perintah di environment
-        # Ganti lthfiwlndri/heart-disease-model dengan nama image yang Anda inginkan di Docker Hub
-        conda run -n heart-disease-env mlflow build-docker Workflow-CI/MLProject --model-uri "runs:/RandomForest_Autolog_Project/model" --image "lthfiwlndri/heart-disease-model" # Sesuaikan
-        
-    - name: Log in to Docker Hub # Langkah Log in to Docker Hub
-      uses: docker/login-action@v3 # Menggunakan action untuk login Docker
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
       with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }} # Pastikan nama secret sesuai
-        password: ${{ secrets.DOCKERHUB_TOKEN }}   # Pastikan nama secret sesuai
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Tag Docker Image # Langkah Tag Docker Image
+    - name: Tag Docker Image
       run: |
-        # Tag image yang dibangun oleh mlflow build-docker
-        # Nama image default dari mlflow build-docker adalah nama project/nama run (misalnya: heart-disease-prediction/randomforest_autolog_project)
-        # Kita tag ulang dengan format Docker Hub: <YOUR_DOCKERHUB_USERNAME>/<YOUR_IMAGE_NAME>:tag
-        # Ganti lthfiwlndri/heart-disease-model dengan nama image yang Anda gunakan di langkah build
-        # Pastikan nama image awal (heart-disease-prediction/randomforest_autolog_project) sesuai dengan output langkah build
-        docker tag heart-disease-prediction/randomForest_Autolog_Project lthfiwlndri/heart-disease-model:latest # Sesuaikan nama image awal jika berbeda
+        # Sesuaikan nama image awal (lihat output mlflow build-docker)
+        docker tag lthfiwlndri/heart-disease-model:latest lthfiwlndri/heart-disease-model:latest
 
-    - name: Push Docker Image # Langkah Push Docker Image
+    - name: Push Docker Image
       run: |
-        docker push lthfiwlndri/heart-disease-model:latest # Ganti dengan nama image Docker Hub Anda
+        docker push lthfiwlndri/heart-disease-model:latest
 
-    # Langkah-langkah Post (Biasanya otomatis ditangani oleh actions)
-    # Ini adalah langkah cleanup yang dijalankan setelah job selesai
-    - name: Post Log in to Docker Hub # Langkah Post Log in to Docker Hub (Otomatis oleh action)
-      run: echo "Post Login handled by action." # Placeholder
-
-    - name: Post Set up Python 3.12.7 # Langkah Post Set up Python 3.12.7 (Otomatis oleh action)
-      run: echo "Post Python setup handled by action." # Placeholder
-
-    - name: Post Run actions/checkout@v3 # Langkah Post Run actions/checkout@v3 (Otomatis oleh action)
-      run: echo "Post Checkout handled by action." # Placeholder
-
-    - name: Complete job # Langkah Complete job
+    - name: Complete job
       run: echo "Job completed successfully."
