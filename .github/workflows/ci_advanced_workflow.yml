@@ -72,8 +72,8 @@ jobs:
         export PATH="$HOME/miniconda/bin:$PATH"
         source ~/.bashrc
         conda activate heart-disease-env
-        # Navigate to the MLflow Project directory
-        cd Workflow-CI/MLProject/
+        # Navigate to the MLflow Project directory (assuming it's at the root)
+        cd MLProject/ # Corrected path
         # Run the MLflow Project entry point 'main'
         # You might need to set MLflow tracking URI here if not logging locally
         # export MLFLOW_TRACKING_URI="your_dagshub_mlflow_uri"
