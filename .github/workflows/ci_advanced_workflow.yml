@@ -1,4 +1,4 @@
-name: CI Workflow Advanced (MLflow Project + Docker + Google Drive Upload - Local Tracking)
+name: CI Workflow Advanced (MLflow Project + Docker + GitHub Artifact Upload)
 
 on:
   push:
@@ -49,18 +49,17 @@ jobs:
         echo "mlflow[docker] installation complete."
 
 
-    # Mengatur variabel environment untuk MLflow Tracking (menggunakan secrets Anda)
-    # Langkah ini opsional jika Anda TIDAK menggunakan DagsHub/remote tracking
+    # Mengatur variabel environment untuk MLflow Tracking (menggunakan secrets Anda - Opsional jika tidak pakai DagsHub)
     # Jika Anda menggunakan tracking lokal, hapus langkah ini
-    - name: Set up MLflow Tracking URI # Langkah tambahan, untuk DagsHub/MLflow Tracking (Opsional)
+    - name: Set up MLflow Tracking URI (Optional - for remote tracking like DagsHub) # Langkah tambahan, untuk DagsHub/MLflow Tracking (Opsional)
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
         echo "Setting up MLflow Tracking URI (Optional - remove if using local tracking)..."
         conda activate heart-disease-env
         # Menggunakan nama secrets sesuai dengan yang Anda miliki (untuk DagsHub)
-        echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
-        echo "DAGSHUB_USER=${{ secrets.DAGSHUB_USER }}" >> $GITHUB_ENV
-        echo "DAGSHUB_TOKEN=${{ secrets.DAGSHUB_PASSWORD }}" >> $GITHUB_ENV # Menggunakan DAGSHUB_PASSWORD (pastikan isinya token DagsHub)
+        echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV # Hapus atau sesuaikan jika tidak pakai DagsHub
+        echo "DAGSHUB_USER=${{ secrets.DAGSHUB_USER }}" >> $GITHUB_ENV # Hapus jika tidak pakai DagsHub
+        echo "DAGSHUB_TOKEN=${{ secrets.DAGSHUB_PASSWORD }}" >> $GITHUB_ENV # Menggunakan DAGSHUB_PASSWORD (pastikan isinya token DagsHub), Hapus jika tidak pakai DagsHub
         echo "MLflow Tracking URI set."
 
 
@@ -68,11 +67,12 @@ jobs:
     - name: Run mlflow project # Langkah Run mlflow project
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
-        echo "Running MLflow project with local tracking..."
-        # Konfigurasi MLflow Tracking ke path lokal (PASTIKAN INI KONSISTEN DENGAN CARA ANDA TRACKING)
-        # Jika Anda menggunakan DagsHub, hapus baris ini atau setel ke URI DagsHub
-        export MLFLOW_TRACKING_URI="./mlruns" # <--- Mengatur tracking lokal
-        echo "MLFLOW_TRACKING_URI set to local: ${MLFLOW_TRACKING_URI}"
+        echo "Running MLflow project..."
+        # Konfigurasi MLflow Tracking
+        # Jika Anda menggunakan DagsHub, setel ke URI DagsHub atau pastikan sudah diatur di langkah sebelumnya
+        # Jika Anda menggunakan tracking lokal, gunakan path lokal seperti di bawah
+        export MLFLOW_TRACKING_URI="./mlruns" # <--- Mengatur tracking lokal (sesuaikan jika pakai DagsHub)
+        echo "MLFLOW_TRACKING_URI set to: ${MLFLOW_TRACKING_URI}"
 
         # Mengaktifkan environment dan menjalankan mlflow run
         conda activate heart-disease-env
@@ -85,6 +85,7 @@ jobs:
     #   run: |
     #     echo "Placeholder for getting run ID. Implement code here if needed."
 
+
     # Langkah Install dependensi Python tambahan jika ada yang tidak di conda.yaml
     # Menggunakan nama langkah yang mirip dengan daftar Anda
     - name: Install Python dependencies # Langkah Install Python dependencies (additional)
@@ -94,40 +95,21 @@ jobs:
         # Contoh: conda activate heart-disease-env && pip install nama_library_tambahan
 
 
-    # Langkah Upload Artefak ke Google Drive menggunakan Rclone (menggunakan secrets Anda)
-    - name: Upload to Google Drive # Langkah Upload to Google Drive
-      shell: bash -l {0} # Menggunakan login shell bash
-      run: |
-        echo "Installing Rclone..."
-        # Unduh dan instal Rclone
-        curl https://rclone.org/install.sh | sudo bash
+    # Langkah Upload Artefak ke GitHub Actions
+    - name: Upload to Google Drive # Langkah Upload to Google Drive (Diganti dengan Upload to GitHub Artifacts)
+      # Menggunakan action resmi untuk mengunggah artefak workflow ke GitHub
+      uses: actions/upload-artifact@v2 # <--- Menggunakan action upload artifact GitHub
 
-        echo "Setting up Rclone config file from secret..."
-        # Tentukan path untuk file konfigurasi sementara
-        RCLONE_CONFIG_TEMP_PATH="/home/runner/.config/rclone/rclone.conf" # Path standar Rclone atau path sementara lain
-        mkdir -p $(dirname "${RCLONE_CONFIG_TEMP_PATH}") # Buat direktori jika belum ada
+      with:
+        # Nama artefak yang akan muncul di halaman run workflow
+        name: mlflow-run-artifacts # <--- Beri nama yang deskriptif
 
-        # Tulis isi secret 'GDRIVE' (huruf besar) ke file konfigurasi sementara
-        echo "${{ secrets.GDRIVE }}" > "${RCLONE_CONFIG_TEMP_PATH}" # <--- Menggunakan secrets.GDRIVE (huruf besar)
+        # Path folder atau file yang akan diunggah (relatif dari root repo)
+        # Ini akan mengunggah folder mlruns yang dibuat oleh mlflow run
+        path: MLProject/mlruns/ # <--- Path ke folder artefak MLflow lokal Anda
 
-        # Beri tahu Rclone untuk menggunakan file konfigurasi ini
-        export RCLONE_CONFIG_PATH="${RCLONE_CONFIG_TEMP_PATH}"
-
-        # Nama remote Google Drive Anda dari RCLONE_CONFIG (secret GDRIVE)
-        REMOTE_NAME="gdrive" # <--- NAMA REMOTE ANDA (sesuai secret Anda)
-
-        # Path ke folder artefak di runner (mlruns ada di dalam MLProject setelah mlflow run)
-        SOURCE_PATH="MLProject/mlruns/" # <--- Path ke folder artefak di runner
-
-        # Menggunakan secret yang berisi ID folder tujuan di Google Drive
-        DESTINATION_FOLDER_ID="${{ secrets.GDRIVE_FOLDER_ID }}" # Menggunakan secret ID folder Anda
-
-        echo "Uploading artifacts from ${SOURCE_PATH} to Google Drive folder ID ${DESTINATION_FOLDER_ID} using Rclone remote ${REMOTE_NAME}..."
-
-        # Menggunakan rclone copy untuk menyalin file
-        rclone copy "${SOURCE_PATH}" "${REMOTE_NAME}:${DESTINATION_FOLDER_ID}" --verbose --progress || { echo "Rclone upload failed!"; exit 1; }
-
-        echo "Rclone upload complete."
+        # (Opsional) Durasi penyimpanan artefak (default 90 hari)
+        retention-days: 7 # Contoh: simpan selama 7 hari
 
 
     # Langkah-langkah Docker (menggunakan secrets Docker Hub Anda)
@@ -137,7 +119,7 @@ jobs:
         echo "Building Docker image..."
         # Konfigurasi MLflow Tracking ke path lokal agar mlflow build-docker bisa menemukan model
         # Jika Anda menggunakan DagsHub, setel ke URI DagsHub atau hapus baris ini jika sudah diatur di langkah sebelumnya
-        export MLFLOW_TRACKING_URI="./mlruns" # <--- Mengatur tracking lokal
+        export MLFLOW_TRACKING_URI="./mlruns" # <--- Mengatur tracking lokal (sesuaikan jika pakai DagsHub)
         echo "MLFLOW_TRACKING_URI set to local for build-docker: ${MLFLOW_TRACKING_URI}"
 
         # Mengaktifkan environment dan menjalankan mlflow build-docker
