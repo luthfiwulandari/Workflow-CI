@@ -96,20 +96,11 @@ jobs:
         echo "Additional Python dependencies installed."
 
 
-    - name: Build Docker Model # Step from criteria (requires Docker setup on runner, might need specific action)
+    - name: Build Docker Image
       run: |
-        echo "Building Docker image from model artifact..."
-        export PATH="$HOME/miniconda/bin:$PATH"
-        # Source Conda's own activation script
-        source $HOME/miniconda/etc/profile.d/conda.sh # Add this line
-        conda activate heart-disease-env # Activate the environment
-
-        # Navigate to the repository root if needed, or keep in MLProject dir
-        # cd /home/runner/work/Workflow-CI/Workflow-CI/ # Example to go to repo root
-
-        # Example (syntax might need adjustment based on MLflow version/logging/run_id availability):
-        # mlflow build-docker --model-uri runs:/${{ env.MLFLOW_RUN_ID }}/random_forest_model --name <DOCKERHUB_USERNAME>/heart-disease-model:latest
-        echo "Placeholder for Docker build command."
+        conda activate heart-disease-env # Pastikan environment aktif
+        # Ganti <YOUR_DOCKERHUB_USERNAME>/<YOUR_IMAGE_NAME> dengan nama image yang Anda inginkan
+        mlflow build-docker Workflow-CI/MLProject --model-uri "runs:/RandomForest_Autolog_Project/model" --image "heart-disease-prediction/randomforest_autolog_project" # Nama image default, akan ditag ulang nanti
 
 
     - name: Log in to Docker Hub # Step from criteria (requires Docker Hub credentials as GitHub Secrets)
