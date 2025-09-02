@@ -38,8 +38,10 @@ jobs:
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         bash miniconda.sh -b -p $HOME/miniconda
         export PATH="$HOME/miniconda/bin:$PATH"
+
+        # Initialize Conda and source the activation script
         conda init bash
-        source ~/.bashrc # Reload bashrc to activate conda
+        source $HOME/miniconda/etc/profile.d/conda.sh # Source Conda's own activation script
 
         echo "Navigating to MLProject directory and creating environment..."
         # Print current directory and list files for debugging
@@ -60,7 +62,7 @@ jobs:
         echo "Creating conda environment from conda.yaml..."
         # Create the conda environment using the local conda.yaml
         conda env create -f conda.yaml
-        conda activate heart-disease-env # Activate the environment
+        conda activate heart-disease-env # Activate the environment - should work now after sourcing
 
         echo "Conda environment creation attempt finished."
         echo "Conda environments list:"
@@ -70,10 +72,13 @@ jobs:
       run: |
         echo "Running MLflow Project..."
         export PATH="$HOME/miniconda/bin:$PATH"
-        source ~/.bashrc
-        conda activate heart-disease-env
+        # Source Conda's own activation script
+        source $HOME/miniconda/etc/profile.d/conda.sh
+        conda activate heart-disease-env # Activate the environment
+
         # Navigate to the MLflow Project directory (assuming it's at the root)
         cd MLProject/ # Corrected path
+
         # Run the MLflow Project entry point 'main'
         # You might need to set MLflow tracking URI here if not logging locally
         # export MLFLOW_TRACKING_URI="your_dagshub_mlflow_uri"
