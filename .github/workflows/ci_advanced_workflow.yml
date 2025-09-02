@@ -49,12 +49,28 @@ jobs:
         echo "mlflow[docker] installation complete."
 
 
+    # Mengatur variabel environment untuk MLflow Tracking (menggunakan secrets Anda)
+    # Langkah ini opsional jika Anda TIDAK menggunakan DagsHub/remote tracking
+    # Jika Anda menggunakan tracking lokal, hapus langkah ini
+    - name: Set up MLflow Tracking URI # Langkah tambahan, untuk DagsHub/MLflow Tracking (Opsional)
+      shell: bash -l {0} # Menggunakan login shell bash
+      run: |
+        echo "Setting up MLflow Tracking URI (Optional - remove if using local tracking)..."
+        conda activate heart-disease-env
+        # Menggunakan nama secrets sesuai dengan yang Anda miliki (untuk DagsHub)
+        echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
+        echo "DAGSHUB_USER=${{ secrets.DAGSHUB_USER }}" >> $GITHUB_ENV
+        echo "DAGSHUB_TOKEN=${{ secrets.DAGSHUB_PASSWORD }}" >> $GITHUB_ENV # Menggunakan DAGSHUB_PASSWORD (pastikan isinya token DagsHub)
+        echo "MLflow Tracking URI set."
+
+
     # Menjalankan MLflow Project untuk melatih model dan mencatatnya (secara lokal)
     - name: Run mlflow project # Langkah Run mlflow project
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
         echo "Running MLflow project with local tracking..."
-        # Konfigurasi MLflow Tracking ke path lokal
+        # Konfigurasi MLflow Tracking ke path lokal (PASTIKAN INI KONSISTEN DENGAN CARA ANDA TRACKING)
+        # Jika Anda menggunakan DagsHub, hapus baris ini atau setel ke URI DagsHub
         export MLFLOW_TRACKING_URI="./mlruns" # <--- Mengatur tracking lokal
         echo "MLFLOW_TRACKING_URI set to local: ${MLFLOW_TRACKING_URI}"
 
@@ -68,10 +84,6 @@ jobs:
     #   shell: bash -l {0}
     #   run: |
     #     echo "Placeholder for getting run ID. Implement code here if needed."
-    #     # Contoh: untuk mendapatkan run_id dari run lokal terakhir:
-    #     # latest_run_id=$(mlflow runs search --order-by "start_time DESC" --max-results 1 --query "tags.mlflow.project.entryPoint = 'main'" --output-plus-fields run_id | grep -oP 'run_id=\S+' | cut -d= -f2)
-    #     # echo "Latest run ID: ${latest_run_id}"
-
 
     # Langkah Install dependensi Python tambahan jika ada yang tidak di conda.yaml
     # Menggunakan nama langkah yang mirip dengan daftar Anda
@@ -90,11 +102,18 @@ jobs:
         # Unduh dan instal Rclone
         curl https://rclone.org/install.sh | sudo bash
 
-        echo "Setting up Rclone config from secret..."
-        # Gunakan secret 'gdrive' yang berisi RCLONE_CONFIG untuk mengatur environment variable
-        export RCLONE_CONFIG='${{ secrets.gdrive }}'
+        echo "Setting up Rclone config file from secret..."
+        # Tentukan path untuk file konfigurasi sementara
+        RCLONE_CONFIG_TEMP_PATH="/home/runner/.config/rclone/rclone.conf" # Path standar Rclone atau path sementara lain
+        mkdir -p $(dirname "${RCLONE_CONFIG_TEMP_PATH}") # Buat direktori jika belum ada
 
-        # Nama remote Google Drive Anda dari RCLONE_CONFIG (secret gdrive)
+        # Tulis isi secret 'GDRIVE' (huruf besar) ke file konfigurasi sementara
+        echo "${{ secrets.GDRIVE }}" > "${RCLONE_CONFIG_TEMP_PATH}" # <--- Menggunakan secrets.GDRIVE (huruf besar)
+
+        # Beri tahu Rclone untuk menggunakan file konfigurasi ini
+        export RCLONE_CONFIG_PATH="${RCLONE_CONFIG_TEMP_PATH}"
+
+        # Nama remote Google Drive Anda dari RCLONE_CONFIG (secret GDRIVE)
         REMOTE_NAME="gdrive" # <--- NAMA REMOTE ANDA (sesuai secret Anda)
 
         # Path ke folder artefak di runner (mlruns ada di dalam MLProject setelah mlflow run)
@@ -117,6 +136,7 @@ jobs:
       run: |
         echo "Building Docker image..."
         # Konfigurasi MLflow Tracking ke path lokal agar mlflow build-docker bisa menemukan model
+        # Jika Anda menggunakan DagsHub, setel ke URI DagsHub atau hapus baris ini jika sudah diatur di langkah sebelumnya
         export MLFLOW_TRACKING_URI="./mlruns" # <--- Mengatur tracking lokal
         echo "MLFLOW_TRACKING_URI set to local for build-docker: ${MLFLOW_TRACKING_URI}"
 
