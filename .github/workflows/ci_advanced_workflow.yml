@@ -68,7 +68,7 @@ jobs:
         echo "Conda environments list:"
         conda env list
 
- - name: Run MLflow Project # Step from criteria
+    - name: Run MLflow Project # Step from criteria
       run: |
         echo "Running MLflow Project..."
         export PATH="$HOME/miniconda/bin:$PATH"
