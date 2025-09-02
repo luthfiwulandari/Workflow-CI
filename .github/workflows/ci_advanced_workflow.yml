@@ -72,15 +72,14 @@ jobs:
       run: |
         echo "Running MLflow project..."
         # Konfigurasi MLflow Tracking
-        # Jika Anda menggunakan DagsHub, setel ke URI DagsHub (jika tidak diatur di langkah sebelumnya)
-        # Jika Anda menggunakan tracking lokal, gunakan path lokal seperti di bawah
-        export MLFLOW_TRACKING_URI="./mlruns" # <--- Mengatur tracking lokal (sesuaikan jika pakai DagsHub)
+        export MLFLOW_TRACKING_URI="./mlruns" # Mengatur tracking lokal
         echo "MLFLOW_TRACKING_URI set to: ${MLFLOW_TRACKING_URI}"
 
         # Mengaktifkan environment dan menjalankan mlflow run
         conda activate heart-disease-env
         cd MLProject # Path yang benar relatif dari root repo
-        mlflow run . -e main -P data_path=heart_clean.csv # --no-conda dihapus
+        # --- UBAH PARAMETER DATA_PATH DI SINI ---
+        mlflow run . -e main -P data_path=namadataset_preprocessing/heart_clean.csv # <--- PATH DATASET YANG BENAR
 
     # Langkah ini opsional jika Anda tidak perlu mengambil run ID secara eksplisit di workflow
     # - name: Get latest MLflow run_id # Langkah Get latest MLflow run_id (Placeholder)
