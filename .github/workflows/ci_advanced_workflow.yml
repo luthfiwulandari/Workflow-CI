@@ -70,22 +70,13 @@ jobs:
 
     - name: Run MLflow Project # Step from criteria
       run: |
-        echo "Running MLflow Project..."
         export PATH="$HOME/miniconda/bin:$PATH"
-        # Source Conda's own activation script
         source $HOME/miniconda/etc/profile.d/conda.sh
-        conda activate heart-disease-env # Activate the environment
+        conda activate heart-disease-env
 
-        # Navigate to the MLflow Project directory (assuming it's at the root)
-        cd MLProject/ # Corrected path
+        cd MLProject/
 
-        # Run the MLflow Project entry point 'main'
-        # You might need to set MLflow tracking URI here if not logging locally
-        # export MLFLOW_TRACKING_URI="your_dagshub_mlflow_uri"
-        # export MLFLOW_TRACKING_USERNAME="${{ secrets.DAGSHUB_USERNAME }}" # If needed
-        # export MLFLOW_TRACKING_PASSWORD="${{ secrets.DAGSHUB_PASSWORD }}" # If needed
-        mlflow run . -e main # Removed --no-conda
-        echo "MLflow Project run finished."
+        mlflow run . -e main
 
 
     - name: Get latest MLflow run_id # Step from criteria (Placeholder - requires MLflow tracking setup)
