@@ -68,15 +68,12 @@ jobs:
         echo "Conda environments list:"
         conda env list
 
-    - name: Run MLflow Project # Step from criteria
+    - name: Run MLflow Project
       run: |
-        export PATH="$HOME/miniconda/bin:$PATH"
-        source $HOME/miniconda/etc/profile.d/conda.sh
-        conda activate heart-disease-env
-
-        cd MLProject/
-
-        mlflow run . -e main
+        # Gunakan conda-run untuk menjalankan perintah di environment
+        conda-run heart-disease-env bash -c 'cd Workflow-CI/MLProject && mlflow run . -e main -P data_path=heart_clean.csv --no-conda'
+        # Catatan: Saya tambahkan `cd Workflow-CI/MLProject` di dalam bash -c karena mlflow run . dijalankan dari root repo
+        # dan -P data_path=heart_clean.csv --no-conda sesuai dengan kebutuhan project kita
 
 
     - name: Get latest MLflow run_id # Step from criteria (Placeholder)
@@ -84,23 +81,14 @@ jobs:
         echo "Placeholder for getting run ID."
 
 
-    - name: Install Python dependencies (for upload/docker) # Step from criteria - Assuming additional deps needed
+    - name: Install Python dependencies (for upload/docker)
       run: |
-        echo "Installing additional Python dependencies..."
-        export PATH="$HOME/miniconda/bin:$PATH"
-        # Source Conda's own activation script
-        source $HOME/miniconda/etc/profile.d/conda.sh # Add this line
-        conda activate heart-disease-env # Activate the environment
-
-        pip install joblib # Example if joblib is needed here but not in conda.yaml
-        echo "Additional Python dependencies installed."
+        conda-run heart-disease-env pip install joblib # Ganti pip install joblib dengan dependencies lain jika ada
 
 
     - name: Build Docker Image
       run: |
-        conda activate heart-disease-env # Pastikan environment aktif
-        # Ganti <YOUR_DOCKERHUB_USERNAME>/<YOUR_IMAGE_NAME> dengan nama image yang Anda inginkan
-        mlflow build-docker Workflow-CI/MLProject --model-uri "runs:/RandomForest_Autolog_Project/model" --image "heart-disease-prediction/randomforest_autolog_project" # Nama image default, akan ditag ulang nanti
+        conda-run heart-disease-env mlflow build-docker Workflow-CI/MLProject --model-uri "runs:/RandomForest_Autolog_Project/model" --image "heart-disease-prediction/randomforest_autolog_project"
 
 
     - name: Log in to Docker Hub # Step from criteria (requires Docker Hub credentials as GitHub Secrets)
