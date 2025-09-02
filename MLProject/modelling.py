@@ -13,18 +13,16 @@ mlflow.autolog()
 
 # Path ke file dataset (sesuai dengan struktur di repository GitHub)
 # Ini adalah path relatif dari direktori kerja MLProject
-data_path = 'namadataset_preprocessing/heart_clean.csv' # <--- Path disesuaikan dengan struktur di dalam MLProject
+data_path = 'namadataset_preprocessing/heart_clean.csv' # Path disesuaikan
 
 try:
-    # Menggunakan mlflow.log_param untuk mencatat path data
-    mlflow.log_param("data_path", data_path)
     df = pd.read_csv(data_path)
     print(f"✅ File dataset berhasil dibaca dari {data_path}")
 except FileNotFoundError:
     print(f"Error: File dataset tidak ditemukan di {data_path}")
     print("Pastikan file heart_clean.csv berada di folder 'namadataset_preprocessing/' di dalam folder MLProject di repository GitHub Anda.")
-    # Keluar dari skrip jika file tidak ditemukan
-    exit(1) # Keluar dengan kode status non-nol untuk menandakan kegagalan
+    exit(1) # Keluar dari skrip jika file tidak ditemukan
+
 
 # Asumsi kolom target adalah 'target'
 if 'target' not in df.columns:
@@ -34,15 +32,17 @@ if 'target' not in df.columns:
 X = df.drop('target', axis=1)
 y = df['target']
 
-# Split data
+# Split data - Dilakukan di luar with run
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Log parameter split data
-mlflow.log_param("test_size", 0.2)
-mlflow.log_param("random_state", 42)
 
-with mlflow.start_run(run_name="RandomForest_Autolog"): # Pastikan run name ini unik atau diatur dinamis jika banyak run
+with mlflow.start_run(run_name="RandomForest_Autolog"):
     print("MLflow run started.")
+
+    # --- LOGGING PARAMETER DI DALAM with run ---
+    mlflow.log_param("data_path", data_path) # <--- Panggil di sini, di dalam with blok
+    mlflow.log_param("test_size", 0.2)
+    mlflow.log_param("random_state", 42)
 
     # Definisikan model
     model = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -59,24 +59,22 @@ with mlflow.start_run(run_name="RandomForest_Autolog"): # Pastikan run name ini 
     y_pred = model.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
     print(f"✅ Accuracy: {acc:.4f}")
-    # Log metrik akurasi
+    # --- LOGGING METRIK DI DALAM with run ---
     mlflow.log_metric("accuracy", acc)
     print("✅ Evaluasi model selesai.")
 
 
-    # --- TAMBAHKAN BAGIAN LOGGING MODEL EKSPLISIT INI ---
-    # Ini akan memastikan model dicatat sebagai artefak
+    # --- LOGGING MODEL EKSPLISIT INI (di dalam with run) ---
     print("Logging model explicitly...")
     try:
         mlflow.sklearn.log_model(
-            sk_model=model,          # Objek model scikit-learn Anda
-            artifact_path="model",   # Nama folder artefak di dalam run (akan jadi .../run_id/artifacts/model/)
-            # registered_model_name="RandomForestHeartDiseaseModel" # Opsional: Nama model terdaftar di MLflow Registry
+            sk_model=model,
+            artifact_path="model",
+            # registered_model_name="RandomForestHeartDiseaseModel" # Opsional
         )
         print("✅ Model logging complete.")
     except Exception as e:
         print(f"Error during explicit model logging: {e}")
-
-    # --- AKHIR BAGIAN LOGGING MODEL EKSPLISIT ---
+    # --- AKHIR LOGGING MODEL EKSPLISIT ---
 
 print("✅ Modelling.py script finished execution.") # Pesan ini ada di luar with mlflow.start_run
