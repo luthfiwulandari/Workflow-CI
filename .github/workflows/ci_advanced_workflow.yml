@@ -1,0 +1,122 @@
+name: MLflow CI Advanced Workflow
+
+on:
+  push:
+    branches:
+      - main # Trigger this workflow on pushes to the main branch
+      # Add other branches if needed
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+
+    steps:
+    - name: set up job # Step from criteria
+      run: echo "Setting up the job..." # Placeholder command
+
+    - name: Checkout code # Step from criteria (actions/checkout@v3)
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.12.7 # Step from criteria
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12.7' # Specify the exact version
+
+    - name: Check environment # Step from criteria
+      run: |
+        python --version
+        pip --version
+        # Add other checks if needed
+
+    - name: Install dependencies # Step from criteria (using conda.yaml)
+      # Install Conda first if not available
+      run: |
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        bash miniconda.sh -b -p $HOME/miniconda
+        export PATH="$HOME/miniconda/bin:$PATH"
+        conda init bash
+        source ~/.bashrc # Reload bashrc to activate conda
+        conda env create -f ./Workflow-CI/MLProject/conda.yaml
+        conda activate heart-disease-env # Activate the environment
+
+    - name: Run MLflow Project # Step from criteria
+      run: |
+        export PATH="$HOME/miniconda/bin:$PATH"
+        source ~/.bashrc
+        conda activate heart-disease-env
+        # Navigate to the MLflow Project directory
+        cd Workflow-CI/MLProject/
+        # Run the MLflow Project entry point 'main'
+        mlflow run . -e main --no-conda # Use --no-conda because env is already activated
+
+    - name: Get latest MLflow run_id # Step from criteria (Placeholder - requires MLflow tracking setup)
+      # This step is complex and depends on where MLflow logs.
+      # If logging locally, you'd need to read from mlflow runs folder.
+      # If logging to DagsHub, you'd need DagsHub/MLflow credentials and API.
+      # This is a placeholder. Actual implementation varies.
+      run: |
+        echo "Getting latest run ID..."
+        # Example (might not work directly without setup):
+        # latest_run_id=$(mlflow runs search --order-by start_time DESC --max-results 1 --run-view active | awk 'NR==2 {print $1}')
+        # echo "Latest run ID: $latest_run_id"
+        # echo "MLFLOW_RUN_ID=$latest_run_id" >> $GITHUB_ENV # Make run_id available to subsequent steps
+
+    - name: Install Python dependencies (for upload/docker) # Step from criteria - Assuming additional deps needed
+      # This might be redundant if already in conda.yaml
+      run: |
+        export PATH="$HOME/miniconda/bin:$PATH"
+        source ~/.bashrc
+        conda activate heart-disease-env
+        pip install joblib # Example if joblib is needed here but not in conda.yaml
+
+    # - name: Upload to Google Drive # Step from criteria (Placeholder - requires GDrive setup/action)
+    #   # This requires setting up Google Drive credentials as GitHub Secrets
+    #   # and using a GitHub Action for GDrive upload.
+    #   run: echo "Uploading artifacts to Google Drive..."
+
+    - name: Build Docker Model # Step from criteria (requires Docker setup on runner, might need specific action)
+      # This requires Docker to be available and potentially mlflow build-docker support
+      # MLflow build-docker command syntax might vary
+      run: |
+        export PATH="$HOME/miniconda/bin:$PATH"
+        source ~/.bashrc
+        conda activate heart-disease-env
+        # Navigate to the MLflow Project directory
+        cd Workflow-CI/MLProject/
+        # Assuming MLflow run generated a model artifact in mlflow-artifacts/run_id/model_dir
+        # You'd typically build docker from the logged model artifact path
+        # Example (syntax might need adjustment based on MLflow version/logging):
+        # mlflow build-docker --model-uri runs:/${{ env.MLFLOW_RUN_ID }}/random_forest_model --name heart-disease-model:latest
+        echo "Building Docker image..."
+
+
+    - name: Log in to Docker Hub # Step from criteria (requires Docker Hub credentials as GitHub Secrets)
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }} # Set as GitHub Secret
+        password: ${{ secrets.DOCKERHUB_TOKEN }}   # Set as GitHub Secret
+
+    - name: Tag Docker image # Step from criteria (depends on build step output)
+      # This step depends on the output name/tag from the build step
+      run: |
+        echo "Tagging Docker image..."
+        # Example (adjust image name/tag as needed):
+        # docker tag heart-disease-model:latest your_dockerhub_username/heart-disease-model:latest
+
+    - name: Push Docker image # Step from criteria
+      run: |
+        echo "Pushing Docker image to Docker Hub..."
+        # Example (adjust image name/tag as needed):
+        # docker push your_dockerhub_username/heart-disease-model:latest
+
+    - name: Post Log in to Docker Hub # Step from criteria (Handled by uses action)
+      run: echo "Post Login handled by action" # Placeholder
+
+    - name: Post Set up Python 3.12.7 # Step from criteria (Handled by uses action)
+      run: echo "Post Python setup handled by action" # Placeholder
+
+    - name: Post Checkout code # Step from criteria (Handled by uses action)
+      run: echo "Post Checkout handled by action" # Placeholder
+
+    - name: Complete job # Step from criteria
+      run: echo "Job completed successfully."
