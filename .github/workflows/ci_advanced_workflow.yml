@@ -65,7 +65,7 @@ jobs:
         which mlflow
         mlflow --help
 
-        - name: Build Docker Model
+    - name: Build Docker Model
       shell: bash -l {0}
       run: |
         conda activate heart-disease-env
