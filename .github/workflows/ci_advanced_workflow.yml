@@ -57,7 +57,7 @@ jobs:
         conda activate heart-disease-env
         echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
         echo "DAGSHUB_USER=${{ secrets.DAGSHUB_USER }}" >> $GITHUB_ENV
-        echo "DAGSHUB_TOKEN=${{ secrets.DAGSHUB_TOKEN }}" >> $GITHUB_ENV
+        echo "DAGSHUB_TOKEN=${{ secrets.DAGSHUB_PASSWORD }}" >> $GITHUB_ENV # <--- Menggunakan DAGSHUB_PASSWORD
         echo "MLflow Tracking URI set."
 
 
