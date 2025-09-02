@@ -29,15 +29,16 @@ jobs:
         # Add other checks if needed
 
     - name: Install dependencies # Step from criteria (using conda.yaml)
-      # Install Conda first if not available
       run: |
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         bash miniconda.sh -b -p $HOME/miniconda
         export PATH="$HOME/miniconda/bin:$PATH"
         conda init bash
         source ~/.bashrc # Reload bashrc to activate conda
-        conda env create -f ./Workflow-CI/MLProject/conda.yaml
+        # Correct the path to conda.yaml relative to the repository root
+        conda env create -f Workflow-CI/MLProject/conda.yaml # Removed leading ./ and simplified
         conda activate heart-disease-env # Activate the environment
+
 
     - name: Run MLflow Project # Step from criteria
       run: |
