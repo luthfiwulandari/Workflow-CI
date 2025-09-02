@@ -32,15 +32,14 @@ jobs:
         activate-environment: heart-disease-env # Memberi tahu action untuk membuat/mengaktifkan environment ini
        
 
-    # Menjalankan MLflow Project untuk melatih model dan mencatatnya
     - name: Run mlflow project # Langkah Run mlflow project
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
         # Mengaktifkan environment dan menjalankan mlflow run
         conda activate heart-disease-env
-        cd Workflow-CI/MLProject # Masuk ke direktori project MLflow
-        mlflow run . -e main -P data_path=heart_clean.csv --no-conda # Jalankan project, pastikan entry point dan parameter benar
-
+        cd MLProject # <--- Path yang benar
+        mlflow run . -e main -P data_path=heart_clean.csv --no-conda
+        
     # Langkah ini opsional dan tergantung apakah Anda perlu mengambil run ID secara eksplisit
     - name: Get latest MLflow run_id # Langkah Get latest MLflow run_id (Placeholder)
       shell: bash -l {0} # Menggunakan login shell bash
