@@ -43,9 +43,13 @@ jobs:
       run: |
         conda activate heart-disease-env
         cd MLProject
-        # Mendapatkan run ID terakhir
-        RUN_ID=$(ls ../mlruns/0 | grep -v meta.yaml | grep -v params.yaml | tail -n 1)
-        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        if [ -d "mlruns/0" ]; then
+          RUN_ID=$(ls mlruns/0 | grep -v meta.yaml | grep -v params.yaml | tail -n 1)
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        else
+          echo "run_id=" >> $GITHUB_OUTPUT
+          echo "mlruns/0 not found!"
+        fi
 
     - name: Install Python dependencies (additional)
       shell: bash -l {0}
