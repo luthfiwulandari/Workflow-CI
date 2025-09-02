@@ -1,4 +1,4 @@
-name: CI Workflow Advanced (MLflow Project + Docker + Google Drive Upload)
+name: CI Workflow Advanced (MLflow Project + Docker + Google Drive Upload - Local Tracking)
 
 on:
   push:
@@ -49,23 +49,15 @@ jobs:
         echo "mlflow[docker] installation complete."
 
 
-    # Mengatur variabel environment untuk MLflow Tracking (menggunakan secrets Anda)
-    - name: Set up MLflow Tracking URI # Langkah tambahan, untuk DagsHub/MLflow Tracking
-      shell: bash -l {0} # Menggunakan login shell bash
-      run: |
-        # Mengaktifkan environment secara manual di shell login untuk memastikan variabel env disetel dengan benar
-        conda activate heart-disease-env
-        # Menggunakan nama secrets sesuai dengan yang Anda miliki
-        echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
-        echo "DAGSHUB_USER=${{ secrets.DAGSHUB_USER }}" >> $GITHUB_ENV
-        echo "DAGSHUB_TOKEN=${{ secrets.DAGSHUB_PASSWORD }}" >> $GITHUB_ENV # Menggunakan DAGSHUB_PASSWORD sesuai secret Anda (harap pastikan isinya token DagsHub)
-        echo "MLflow Tracking URI set."
-
-
-    # Menjalankan MLflow Project untuk melatih model dan mencatatnya
+    # Menjalankan MLflow Project untuk melatih model dan mencatatnya (secara lokal)
     - name: Run mlflow project # Langkah Run mlflow project
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
+        echo "Running MLflow project with local tracking..."
+        # Konfigurasi MLflow Tracking ke path lokal
+        export MLFLOW_TRACKING_URI="./mlruns" # <--- Mengatur tracking lokal
+        echo "MLFLOW_TRACKING_URI set to local: ${MLFLOW_TRACKING_URI}"
+
         # Mengaktifkan environment dan menjalankan mlflow run
         conda activate heart-disease-env
         cd MLProject # Path yang benar relatif dari root repo
@@ -75,8 +67,11 @@ jobs:
     # - name: Get latest MLflow run_id # Langkah Get latest MLflow run_id (Placeholder)
     #   shell: bash -l {0}
     #   run: |
-    #     # Kode untuk mendapatkan run ID terbaru, sesuaikan dengan kebutuhan jika diperlukan
     #     echo "Placeholder for getting run ID. Implement code here if needed."
+    #     # Contoh: untuk mendapatkan run_id dari run lokal terakhir:
+    #     # latest_run_id=$(mlflow runs search --order-by "start_time DESC" --max-results 1 --query "tags.mlflow.project.entryPoint = 'main'" --output-plus-fields run_id | grep -oP 'run_id=\S+' | cut -d= -f2)
+    #     # echo "Latest run ID: ${latest_run_id}"
+
 
     # Langkah Install dependensi Python tambahan jika ada yang tidak di conda.yaml
     # Menggunakan nama langkah yang mirip dengan daftar Anda
@@ -121,6 +116,10 @@ jobs:
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
         echo "Building Docker image..."
+        # Konfigurasi MLflow Tracking ke path lokal agar mlflow build-docker bisa menemukan model
+        export MLFLOW_TRACKING_URI="./mlruns" # <--- Mengatur tracking lokal
+        echo "MLFLOW_TRACKING_URI set to local for build-docker: ${MLFLOW_TRACKING_URI}"
+
         # Mengaktifkan environment dan menjalankan mlflow build-docker
         conda activate heart-disease-env # Tetap aktifkan environment
         # --model-uri harus menunjuk ke model yang berhasil dicatat oleh langkah mlflow run sebelumnya
