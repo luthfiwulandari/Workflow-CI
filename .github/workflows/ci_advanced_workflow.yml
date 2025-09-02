@@ -64,7 +64,41 @@ jobs:
         echo "Placeholder for Upload to Google Drive step. Implement your upload logic here."
         # Contoh: Jika menggunakan DagsHub, artefak sudah diunggah oleh MLflow run.
         # Jika mengunggah file lokal, gunakan perintah atau action yang sesuai.
+        
+    # Langkah Debugging: Memeriksa instalasi MLflow sebelum membangun Docker
+    - name: Debug MLflow Installation
+      shell: bash -l {0} # Menggunakan login shell bash
+      run: |
+        echo "Debugging MLflow installation..."
+        # Aktifkan environment
+        conda activate heart-disease-env
+        echo "Conda environment 'heart-disease-env' activated."
 
+        # Periksa versi MLflow yang terinstal
+        echo "Installed MLflow version:"
+        pip show mlflow || echo "MLflow not found via pip show."
+        conda list mlflow || echo "MLflow not found via conda list."
+
+        # Periksa apakah perintah 'mlflow' ada di PATH
+        echo "Checking if 'mlflow' command is in PATH:"
+        which mlflow || echo "'mlflow' command not found in PATH."
+
+        # Periksa help MLflow untuk melihat sub-command yang tersedia
+        echo "Checking mlflow --help output for 'build-docker':"
+        mlflow --help
+        # Coba jalankan help untuk build-docker secara spesifik (ini mungkin gagal jika command tidak ada)
+        echo "Checking mlflow build-docker --help output:"
+        mlflow build-docker --help || echo "'mlflow build-docker' help command failed."
+
+        echo "Debug steps complete. Check the output above for clues."
+
+    # Langkah Build Docker Model (yang saat ini error)
+    - name: Build Docker Model # Langkah Build Docker Model
+      shell: bash -l {0} # Menggunakan login shell bash
+      run: |
+        # Menggunakan conda run -n untuk menjalankan perintah di environment
+        # Ganti lthfiwlndri/heart-disease-model dengan nama image yang Anda inginkan di Docker Hub
+        conda run -n heart-disease-env mlflow build-docker Workflow-CI/MLProject --model-uri "runs:/RandomForest_Autolog_Project/model" --image "lthfiwlndri/heart-disease-model" # Sesuaikan
     - name: Build Docker Model # Langkah Build Docker Model
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
