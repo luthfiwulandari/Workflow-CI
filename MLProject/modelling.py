@@ -9,11 +9,13 @@ from sklearn.metrics import accuracy_score
 import os
 
 # Menonaktifkan autologging untuk menghindari konflik logging parameter
-mlflow.autolog(disable=True) # <--- Autologging dinonaktifkan
+mlflow.autolog(disable=True)
 
 # Path ke file dataset (sesuai dengan struktur di repository GitHub)
 # Ini adalah path relatif dari direktori kerja MLProject
-data_path = 'namadataset_preprocessing/heart_clean.csv' # Path disesuaikan
+# Parameter data_path akan dilog otomatis oleh mlflow run dari command line
+data_path = 'namadataset_preprocessing/heart_clean.csv' # Path disesuaikan di sini
+
 
 try:
     df = pd.read_csv(data_path)
@@ -21,7 +23,7 @@ try:
 except FileNotFoundError:
     print(f"Error: File dataset tidak ditemukan di {data_path}")
     print("Pastikan file heart_clean.csv berada di folder 'namadataset_preprocessing/' di dalam folder MLProject di repository GitHub Anda.")
-    exit(1) # Keluar dari skrip jika file tidak ditemukan
+    exit(1)
 
 # Asumsi kolom target adalah 'target'
 if 'target' not in df.columns:
@@ -35,11 +37,11 @@ y = df['target']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 
-with mlflow.start_run(run_name="RandomForest_ExplicitLog"): # Mengganti nama run untuk membedakan
+with mlflow.start_run(run_name="RandomForest_ExplicitLog"):
     print("MLflow run started.")
 
-    # --- LOGGING PARAMETER EKSPLISIT DI DALAM with run ---
-    mlflow.log_param("data_path", data_path)
+    # --- LOGGING PARAMETER EKSPLISIT DI DALAM with run (kecuali data_path) ---
+    # mlflow.log_param("data_path", data_path) # <--- BARIS INI DIHAPUS
     mlflow.log_param("test_size", 0.2)
     mlflow.log_param("random_state", 42)
 
@@ -76,4 +78,4 @@ with mlflow.start_run(run_name="RandomForest_ExplicitLog"): # Mengganti nama run
         print(f"Error during explicit model logging: {e}")
     # --- AKHIR LOGGING MODEL EKSPLISIT ---
 
-print("✅ Modelling.py script finished execution.") # Pesan ini ada di luar with mlflow.start_run
+print("✅ Modelling.py script finished execution.")
