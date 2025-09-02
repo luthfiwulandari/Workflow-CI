@@ -8,8 +8,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import os
 
-# Autolog aktif (opsional jika menggunakan log_model eksplisit, tapi bisa dibiarkan)
-mlflow.autolog()
+# Menonaktifkan autologging untuk menghindari konflik logging parameter
+mlflow.autolog(disable=True) # <--- Autologging dinonaktifkan
 
 # Path ke file dataset (sesuai dengan struktur di repository GitHub)
 # Ini adalah path relatif dari direktori kerja MLProject
@@ -23,7 +23,6 @@ except FileNotFoundError:
     print("Pastikan file heart_clean.csv berada di folder 'namadataset_preprocessing/' di dalam folder MLProject di repository GitHub Anda.")
     exit(1) # Keluar dari skrip jika file tidak ditemukan
 
-
 # Asumsi kolom target adalah 'target'
 if 'target' not in df.columns:
     print("Error: Kolom 'target' tidak ditemukan di dataset.")
@@ -36,11 +35,11 @@ y = df['target']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 
-with mlflow.start_run(run_name="RandomForest_Autolog"):
+with mlflow.start_run(run_name="RandomForest_ExplicitLog"): # Mengganti nama run untuk membedakan
     print("MLflow run started.")
 
-    # --- LOGGING PARAMETER DI DALAM with run ---
-    mlflow.log_param("data_path", data_path) # <--- Panggil di sini, di dalam with blok
+    # --- LOGGING PARAMETER EKSPLISIT DI DALAM with run ---
+    mlflow.log_param("data_path", data_path)
     mlflow.log_param("test_size", 0.2)
     mlflow.log_param("random_state", 42)
 
@@ -59,7 +58,7 @@ with mlflow.start_run(run_name="RandomForest_Autolog"):
     y_pred = model.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
     print(f"✅ Accuracy: {acc:.4f}")
-    # --- LOGGING METRIK DI DALAM with run ---
+    # --- LOGGING METRIK EKSPLISIT DI DALAM with run ---
     mlflow.log_metric("accuracy", acc)
     print("✅ Evaluasi model selesai.")
 
