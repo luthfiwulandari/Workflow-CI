@@ -1,4 +1,4 @@
-name: CI Workflow Skilled (MLflow Project + Google Drive Upload)
+name: CI Workflow Advanced (MLflow Project + Docker + Google Drive Upload)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   # Anda bisa tambahkan trigger lain, misalnya pull_request:
 
 jobs:
-  build-and-upload: # Nama job, bisa disesuaikan
+  build-and-deploy: # Nama job, bisa disesuaikan
     runs-on: ubuntu-latest # Menggunakan runner
 
     steps:
@@ -38,16 +38,27 @@ jobs:
         activate-environment: heart-disease-env # Penting: Memberi tahu action untuk membuat/mengaktifkan environment ini
         environment-file: MLProject/conda.yaml # Path ke conda.yaml Anda (relatif dari root repo)
 
+    # Langkah tambahan: Memastikan MLflow terinstal dengan dukungan Docker secara eksplisit
+    - name: Install MLflow with Docker Support # Langkah tambahan, diperlukan untuk build-docker
+      shell: bash -l {0} # Menggunakan login shell bash
+      run: |
+        echo "Installing mlflow[docker] using pip..."
+        conda activate heart-disease-env # Aktifkan environment
+        # Gunakan pip untuk menginstal atau mengupdate mlflow dengan dukungan docker
+        pip install mlflow[docker] --upgrade # Gunakan --upgrade untuk memastikan versi terbaru dan extras terinstal
+        echo "mlflow[docker] installation complete."
 
-    # Mengatur variabel environment untuk MLflow Tracking (jika menggunakan DagsHub)
+
+    # Mengatur variabel environment untuk MLflow Tracking (menggunakan secrets Anda)
     - name: Set up MLflow Tracking URI # Langkah tambahan, untuk DagsHub/MLflow Tracking
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
         # Mengaktifkan environment secara manual di shell login untuk memastikan variabel env disetel dengan benar
         conda activate heart-disease-env
+        # Menggunakan nama secrets sesuai dengan yang Anda miliki
         echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
         echo "DAGSHUB_USER=${{ secrets.DAGSHUB_USER }}" >> $GITHUB_ENV
-        echo "DAGSHUB_TOKEN=${{ secrets.DAGSHUB_PASSWORD }}" >> $GITHUB_ENV # Menggunakan DAGSHUB_PASSWORD sesuai secret Anda
+        echo "DAGSHUB_TOKEN=${{ secrets.DAGSHUB_PASSWORD }}" >> $GITHUB_ENV # Menggunakan DAGSHUB_PASSWORD sesuai secret Anda (harap pastikan isinya token DagsHub)
         echo "MLflow Tracking URI set."
 
 
@@ -76,7 +87,7 @@ jobs:
         # Contoh: conda activate heart-disease-env && pip install nama_library_tambahan
 
 
-    # Langkah Upload Artefak ke Google Drive menggunakan Rclone
+    # Langkah Upload Artefak ke Google Drive menggunakan Rclone (menggunakan secrets Anda)
     - name: Upload to Google Drive # Langkah Upload to Google Drive
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
@@ -89,13 +100,13 @@ jobs:
         export RCLONE_CONFIG='${{ secrets.gdrive }}'
 
         # Nama remote Google Drive Anda dari RCLONE_CONFIG (secret gdrive)
-        REMOTE_NAME="gdrive" # <--- NAMA REMOTE ANDA
+        REMOTE_NAME="gdrive" # <--- NAMA REMOTE ANDA (sesuai secret Anda)
 
         # Path ke folder artefak di runner (mlruns ada di dalam MLProject setelah mlflow run)
         SOURCE_PATH="MLProject/mlruns/" # <--- Path ke folder artefak di runner
 
         # Menggunakan secret yang berisi ID folder tujuan di Google Drive
-        DESTINATION_FOLDER_ID="${{ secrets.GDRIVE_FOLDER_ID }}" # Menggunakan secret ID folder
+        DESTINATION_FOLDER_ID="${{ secrets.GDRIVE_FOLDER_ID }}" # Menggunakan secret ID folder Anda
 
         echo "Uploading artifacts from ${SOURCE_PATH} to Google Drive folder ID ${DESTINATION_FOLDER_ID} using Rclone remote ${REMOTE_NAME}..."
 
@@ -104,6 +115,41 @@ jobs:
 
         echo "Rclone upload complete."
 
+
+    # Langkah-langkah Docker (menggunakan secrets Docker Hub Anda)
+    - name: Build Docker Model # Langkah Build Docker Model
+      shell: bash -l {0} # Menggunakan login shell bash
+      run: |
+        echo "Building Docker image..."
+        # Mengaktifkan environment dan menjalankan mlflow build-docker
+        conda activate heart-disease-env # Tetap aktifkan environment
+        # --model-uri harus menunjuk ke model yang berhasil dicatat oleh langkah mlflow run sebelumnya
+        # "runs:/<nama_run>/<artifact_path_model>"
+        # Nama run default dari autolog adalah RandomForest_Autolog_Project (sesuaikan jika beda)
+        # Artifact path default untuk model autolog adalah "model"
+        # Ganti lthfiwlndri/heart-disease-model dengan nama image yang Anda inginkan di Docker Hub
+        mlflow build-docker Workflow-CI/MLProject --model-uri "runs:/RandomForest_Autolog_Project/model" --image "lthfiwlndri/heart-disease-model" # Sesuaikan dengan Docker Hub Anda
+
+    - name: Log in to Docker Hub # Langkah Log in to Docker Hub
+      uses: docker/login-action@v3 # Menggunakan action untuk login Docker
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }} # Pastikan nama secret sesuai
+        password: ${{ secrets.DOCKERHUB_TOKEN }}   # Pastikan nama secret sesuai
+
+    - name: Tag Docker Image # Langkah Tag Docker Image
+      run: |
+        echo "Tagging Docker image..."
+        # Tag image yang dibangun oleh mlflow build-docker
+        # Nama image default dari mlflow build-docker adalah nama project/nama run (misalnya: heart-disease-prediction/randomforest_autolog_project)
+        # Kita tag ulang dengan format Docker Hub: <YOUR_DOCKERHUB_USERNAME>/<YOUR_IMAGE_NAME>:tag
+        # Ganti lthfiwlndri/heart-disease-model dengan nama image yang Anda gunakan di langkah build
+        # Pastikan nama image awal (heart-disease-prediction/randomForest_Autolog_Project) sesuai dengan output langkah build
+        docker tag heart-disease-prediction/randomForest_Autolog_Project lthfiwlndri/heart-disease-model:latest # Sesuaikan dengan Docker Hub Anda
+
+    - name: Push Docker Image # Langkah Push Docker Image
+      run: |
+        echo "Pushing Docker image to Docker Hub..."
+        docker push lthfiwlndri/heart-disease-model:latest # Ganti dengan nama image Docker Hub Anda
 
     # Langkah-langkah Post (Biasanya otomatis ditangani oleh actions)
     # Ini adalah langkah cleanup yang dijalankan setelah job selesai
