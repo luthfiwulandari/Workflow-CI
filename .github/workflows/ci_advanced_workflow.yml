@@ -37,8 +37,8 @@ jobs:
       run: |
         # Mengaktifkan environment dan menjalankan mlflow run
         conda activate heart-disease-env
-        cd MLProject # <--- Path yang benar
-        mlflow run . -e main -P data_path=heart_clean.csv --no-conda
+        cd MLProject # Path yang benar
+        mlflow run . -e main -P data_path=heart_clean.csv # <--- --no-conda dihapus
         
     # Langkah ini opsional dan tergantung apakah Anda perlu mengambil run ID secara eksplisit
     - name: Get latest MLflow run_id # Langkah Get latest MLflow run_id (Placeholder)
