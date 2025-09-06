@@ -15,22 +15,22 @@ jobs:
     - name: Run actions/checkout@v3 
       uses: actions/checkout@v3 
 
-      - name: Check Env
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          conda-file: Workflow-CI/MLProject/conda.yaml
-          architecture: x64
-          activate-environment: heart-disease-env 
-          cache-environment: true
+    - name: Check Env
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        conda-file: Workflow-CI/MLProject/conda.yaml
+        architecture: x64
+        activate-environment: heart-disease-env 
+        cache-environment: true
 
-      - name: Verify Env
-        run: |
-          # Check which Python interpreter is being used
-          which python
-          # Check installed packages
-          conda list
-          # Or pip list if you installed via pip
-          # pip list
+    - name: Verify Env
+      run: |
+        # Check which Python interpreter is being used
+        which python
+        # Check installed packages
+        conda list
+        # Or pip list if you installed via pip
+        # pip list
 
     - name: Set up Python 3.12.7 
       uses: actions/setup-python@v4 
