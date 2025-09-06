@@ -1,9 +1,11 @@
-
 name: Heart-Disease-Prediction
 
 # Define the entry point for the project
 entry_points:
   main:
+    # Define the command to run for this entry point
+    # Use the {parameter_name} syntax to pass parameters
+    command: "python modelling.py --data_path {data_path}"
 
     # Specify the environment to use (conda)
     # This refers to the conda.yaml file
