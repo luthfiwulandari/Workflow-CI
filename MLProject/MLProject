@@ -1,0 +1,11 @@
+
+name: Heart-Disease-Prediction
+
+# Define the entry point for the project
+entry_points:
+  main:
+
+    # Specify the environment to use (conda)
+    # This refers to the conda.yaml file
+    parameters:
+      data_path: {type: string, default: "heart_clean.csv"}
