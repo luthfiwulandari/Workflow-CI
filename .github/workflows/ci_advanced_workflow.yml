@@ -3,9 +3,7 @@ name: CI Workflow Skilled (MLflow Project + GitHub Artifact Upload)
 on:
   push:
     branches:
-      - main # Ganti jika branch utama Anda berbeda
-  # Anda bisa tambahkan trigger lain, misalnya pull_request:
-
+      - main
 jobs:
   build-and-upload: # Nama job, bisa disesuaikan
     runs-on: ubuntu-latest # Menggunakan runner
@@ -22,25 +20,15 @@ jobs:
       with:
         python-version: '3.12' # Sesuaikan dengan versi di conda.yaml
 
-    # Langkah ini opsional jika Anda hanya mengandalkan environment-file di setup-miniconda
-    # - name: Check Env # Langkah Check Env (Placeholder)
-    #   run: |
-    #     echo "Checking environment status step (Placeholder)."
-    #     # Contoh: conda info --envs
-
-
     - name: Install dependencies # Langkah Install dependencies (Menggunakan Miniconda env)
       uses: conda-incubator/setup-miniconda@v2 # Menggunakan action untuk menyiapkan Miniconda dan environment
       with:
         miniconda-version: "latest"
         python-version: 3.12 # Pastikan sesuai dengan versi di conda.yaml
         auto-activate-base: false
-        activate-environment: heart-disease-env # Penting: Memberi tahu action untuk membuat/mengaktifkan environment ini
-        environment-file: MLProject/conda.yaml # Path ke conda.yaml Anda (relatif dari root repo)
+        activate-environment: heart-disease-env 
+        environment-file: MLProject/conda.yaml 
 
-    # Langkah Install MLflow dasar (tanpa extras docker yang eksplisit jika tidak diperlukan)
-    # Jika conda.yaml sudah mencantumkan mlflow, ini mungkin tidak perlu
-    # Jika sebelumnya kita butuh 'mlflow[docker]' untuk build-docker, sekarang mungkin cukup 'mlflow'
     - name: Install MLflow (basic) # Langkah tambahan, pastikan mlflow terinstal
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
@@ -51,9 +39,6 @@ jobs:
         pip install mlflow --upgrade # Atau sesuaikan jika di conda.yaml pakai [docker]
         echo "mlflow installation complete."
 
-
-    # Mengatur variabel environment untuk MLflow Tracking (menggunakan secrets Anda - Opsional jika tidak pakai DagsHub)
-    # Jika Anda menggunakan tracking lokal, hapus langkah ini
     - name: Set up MLflow Tracking URI (Optional - for remote tracking like DagsHub) # Langkah tambahan, untuk DagsHub/MLflow Tracking (Opsional)
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
@@ -80,16 +65,7 @@ jobs:
         cd MLProject # Path yang benar relatif dari root repo
         # --- UBAH PARAMETER DATA_PATH DI SINI ---
         mlflow run . -e main -P data_path=namadataset_preprocessing/heart_clean.csv # <--- PATH DATASET YANG BENAR
-
-    # Langkah ini opsional jika Anda tidak perlu mengambil run ID secara eksplisit di workflow
-    # - name: Get latest MLflow run_id # Langkah Get latest MLflow run_id (Placeholder)
-    #   shell: bash -l {0}
-    #   run: |
-    #     echo "Placeholder for getting run ID. Implement code here if needed."
-
-
-    # Langkah Install dependensi Python tambahan jika ada yang tidak di conda.yaml
-    # Menggunakan nama langkah yang mirip dengan daftar Anda
+        
     - name: Install Python dependencies # Langkah Install Python dependencies (additional)
       shell: bash -l {0} # Menggunakan login shell bash
       run: |
@@ -98,9 +74,8 @@ jobs:
 
 
     # Langkah Upload Artefak ke GitHub Actions
-    - name: Upload to Github Artifact # Langkah Upload to Google Drive (Diganti dengan Upload to GitHub Artifacts)
-      # Menggunakan action resmi untuk mengunggah artefak workflow ke GitHub
-      uses: actions/upload-artifact@v4 # <--- Menggunakan action upload artifact GitHub (VERSI v3)
+    - name: Upload to Github Artifact 
+      uses: actions/upload-artifact@v4 
 
       with:
         # Nama artefak yang akan muncul di halaman run workflow
@@ -114,11 +89,6 @@ jobs:
         retention-days: 7 # Contoh: simpan selama 7 hari
 
 
-    # LANGKAH-LANGKAH DOCKER DIHAPUS UNTUK KRITERIA SKILLED
-
-
-    # Langkah-langkah Post (Biasanya otomatis ditangani oleh actions)
-    # Ini adalah langkah cleanup yang dijalankan setelah job selesai
     - name: Post Log in to Docker Hub # Langkah Post Log in to Docker Hub (Otomatis oleh action) - Dibiarkan saja atau bisa dihapus
       run: echo "Post Login handled by action." # Placeholder
 
