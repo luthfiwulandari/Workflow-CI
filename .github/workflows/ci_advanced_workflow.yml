@@ -5,32 +5,49 @@ on:
     branches:
       - main
 jobs:
-  build-and-upload: # Nama job, bisa disesuaikan
-    runs-on: ubuntu-latest # Menggunakan runner
+  build-and-upload: 
+    runs-on: ubuntu-latest 
 
     steps:
-    - name: Set up job # Langkah Set up job (ini adalah langkah otomatis oleh runner)
-      run: echo "Starting job setup." # Placeholder, sebenarnya otomatis
+    - name: Set up job 
+      run: echo "Starting job setup." 
 
-    - name: Run actions/checkout@v3 # Langkah Run actions/checkout@v3 (Menggunakan action)
-      uses: actions/checkout@v3 # Menggunakan action untuk checkout kode
+    - name: Run actions/checkout@v3 
+      uses: actions/checkout@v3 
 
-    - name: Set up Python 3.12.7 # Langkah Set up Python 3.12.7 (Menggunakan action)
-      uses: actions/setup-python@v4 # Menggunakan action untuk menyiapkan Python
+      - name: Check Env
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          conda-file: Workflow-CI/MLProject/conda.yaml
+          architecture: x64
+          activate-environment: heart-disease-env 
+          cache-environment: true
+
+      - name: Verify Env
+        run: |
+          # Check which Python interpreter is being used
+          which python
+          # Check installed packages
+          conda list
+          # Or pip list if you installed via pip
+          # pip list
+
+    - name: Set up Python 3.12.7 
+      uses: actions/setup-python@v4 
       with:
-        python-version: '3.12' # Sesuaikan dengan versi di conda.yaml
+        python-version: '3.12' 
 
-    - name: Install dependencies # Langkah Install dependencies (Menggunakan Miniconda env)
-      uses: conda-incubator/setup-miniconda@v2 # Menggunakan action untuk menyiapkan Miniconda dan environment
+    - name: Install dependencies
+      uses: conda-incubator/setup-miniconda@v2 
       with:
         miniconda-version: "latest"
-        python-version: 3.12 # Pastikan sesuai dengan versi di conda.yaml
+        python-version: 3.12 
         auto-activate-base: false
         activate-environment: heart-disease-env 
         environment-file: MLProject/conda.yaml 
 
-    - name: Install MLflow (basic) # Langkah tambahan, pastikan mlflow terinstal
-      shell: bash -l {0} # Menggunakan login shell bash
+    - name: Install MLflow (basic) 
+      shell: bash -l {0}
       run: |
         echo "Installing mlflow using pip..."
         conda activate heart-disease-env # Aktifkan environment
@@ -39,8 +56,8 @@ jobs:
         pip install mlflow --upgrade # Atau sesuaikan jika di conda.yaml pakai [docker]
         echo "mlflow installation complete."
 
-    - name: Set up MLflow Tracking URI (Optional - for remote tracking like DagsHub) # Langkah tambahan, untuk DagsHub/MLflow Tracking (Opsional)
-      shell: bash -l {0} # Menggunakan login shell bash
+    - name: Set up MLflow Tracking URI (Optional - for remote tracking like DagsHub) 
+      shell: bash -l {0}
       run: |
         echo "Setting up MLflow Tracking URI (Optional - remove if using local tracking)..."
         conda activate heart-disease-env
@@ -51,9 +68,8 @@ jobs:
         echo "MLflow Tracking URI set."
 
 
-    # Menjalankan MLflow Project untuk melatih model dan mencatatnya (secara lokal atau remote jika DagsHub dikonfigurasi)
-    - name: Run mlflow project # Langkah Run mlflow project
-      shell: bash -l {0} # Menggunakan login shell bash
+    - name: Run mlflow project 
+      shell: bash -l {0} 
       run: |
         echo "Running MLflow project..."
         # Konfigurasi MLflow Tracking
@@ -66,37 +82,29 @@ jobs:
         # --- UBAH PARAMETER DATA_PATH DI SINI ---
         mlflow run . -e main -P data_path=namadataset_preprocessing/heart_clean.csv # <--- PATH DATASET YANG BENAR
         
-    - name: Install Python dependencies # Langkah Install Python dependencies (additional)
-      shell: bash -l {0} # Menggunakan login shell bash
+    - name: Install Python dependencies 
+      shell: bash -l {0} 
       run: |
         echo "Installing additional Python dependencies step (modify if needed)."
         # Contoh: conda activate heart-disease-env && pip install nama_library_tambahan
 
 
-    # Langkah Upload Artefak ke GitHub Actions
     - name: Upload to Github Artifact 
       uses: actions/upload-artifact@v4 
 
       with:
-        # Nama artefak yang akan muncul di halaman run workflow
-        name: mlflow-run-artifacts # <--- Beri nama yang deskriptif
+        name: mlflow-run-artifacts
+        path: MLProject/mlruns/
+        retention-days: 7 
 
-        # Path folder atau file yang akan diunggah (relatif dari root repo)
-        # Ini akan mengunggah folder mlruns yang dibuat oleh mlflow run
-        path: MLProject/mlruns/ # <--- Path ke folder artefak MLflow lokal Anda
+    - name: Post Log in to Docker Hub 
+      run: echo "Post Login handled by action." 
 
-        # (Opsional) Durasi penyimpanan artefak (default 90 hari)
-        retention-days: 7 # Contoh: simpan selama 7 hari
+    - name: Post Set up Python 3.12.7 
+      run: echo "Post Python setup handled by action." 
 
+    - name: Post Run actions/checkout@v3
+      run: echo "Post Checkout handled by action." 
 
-    - name: Post Log in to Docker Hub # Langkah Post Log in to Docker Hub (Otomatis oleh action) - Dibiarkan saja atau bisa dihapus
-      run: echo "Post Login handled by action." # Placeholder
-
-    - name: Post Set up Python 3.12.7 # Langkah Post Set up Python 3.12.7 (Otomatis oleh action)
-      run: echo "Post Python setup handled by action." # Placeholder
-
-    - name: Post Run actions/checkout@v3 # Langkah Post Run actions/checkout@v3 (Otomatis oleh action)
-      run: echo "Post Checkout handled by action." # Placeholder
-
-    - name: Complete job # Langkah Complete job
+    - name: Complete job 
       run: echo "Job completed successfully."
